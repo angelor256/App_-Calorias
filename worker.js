@@ -36,7 +36,7 @@ export default {
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
         body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } }),
       });
-    if (!g.ok) return json({ error: 'ai error', status: g.status }, 502);
+    if (!g.ok) return json({ error: 'ai error', status: g.status, detail: (await g.text()).slice(0, 300) }, 502);
     try {
       const t = (await g.json()).candidates[0].content.parts[0].text;
       const o = JSON.parse(t);
