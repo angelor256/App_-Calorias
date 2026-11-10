@@ -2,6 +2,7 @@
 const MODEL = 'gemini-flash-latest';
 const PROMPT = 'Eres nutricionista. Estima los valores nutricionales de lo que se describe o aparece en la imagen (una porción típica si no se indica cantidad). Responde SOLO JSON: {"name":string,"kcal":number,"protein":number,"carbs":number,"fat":number}. name en español.';
 
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -14,13 +15,15 @@ export default {
     if (req.method !== 'POST') return json({ error: 'method' }, 405);
     if (origin && !okOrigin) return json({ error: 'origin' }, 403);
 
+
     // 1) validar sesión de Supabase
     const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (!token) return json({ error: 'no auth' }, 401);
-    const u = await fetch(env.SUPABASE_URL + '/auth/v1/user', {
-      headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY },
+    const u = await fetch((env.SUPABASE_URL || 'https://pcyatoxtwngpzbotrxxu.supabase.co') + '/auth/v1/user', {
+      headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY || 'sb_publishable_DpZuBk4uzmjcUvFJEvoEjw_oYBU1_lW' },
     });
     if (!u.ok) return json({ error: 'invalid session' }, 401);
+
 
     // 2) llamar a Gemini
     let body; try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
@@ -44,3 +47,4 @@ export default {
     } catch { return json({ error: 'bad ai response' }, 502); }
   },
 };
+
