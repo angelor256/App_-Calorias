@@ -1,5 +1,5 @@
 // Worker: sirve la app (assets) y expone POST /api/ai (Gemini), protegido con la sesión de Supabase.
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-flash-latest';
 const PROMPT = 'Eres nutricionista. Estima los valores nutricionales de lo que se describe o aparece en la imagen (una porción típica si no se indica cantidad). Responde SOLO JSON: {"name":string,"kcal":number,"protein":number,"carbs":number,"fat":number}. name en español.';
 
 export default {
@@ -17,8 +17,8 @@ export default {
     // 1) validar sesión de Supabase
     const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (!token) return json({ error: 'no auth' }, 401);
-    const u = await fetch((env.SUPABASE_URL || 'https://pcyatoxtwngpzbotrxxu.supabase.co') + '/auth/v1/user', {
-      headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY || 'sb_publishable_DpZuBk4uzmjcUvFJEvoEjw_oYBU1_lW' },
+    const u = await fetch(env.SUPABASE_URL + '/auth/v1/user', {
+      headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY },
     });
     if (!u.ok) return json({ error: 'invalid session' }, 401);
 
