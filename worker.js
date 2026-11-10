@@ -5,6 +5,10 @@ const PROMPT = 'Eres nutricionista. Estima los valores nutricionales de lo que s
 
 
 
+
+
+
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -20,6 +24,10 @@ export default {
 
 
 
+
+
+
+
     // 1) validar sesión de Supabase
     const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (!token) return json({ error: 'no auth' }, 401);
@@ -27,6 +35,10 @@ export default {
       headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY || 'sb_publishable_DpZuBk4uzmjcUvFJEvoEjw_oYBU1_lW' },
     });
     if (!u.ok) return json({ error: 'invalid session' }, 401);
+
+
+
+
 
 
 
@@ -39,7 +51,7 @@ export default {
       parts.push({ inline_data: { mime_type: body.mime || 'image/jpeg', data: body.image } });
     }
     const reqBody = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } });
-    const models = [MODEL, 'gemini-flash-lite-latest', MODEL, 'gemini-flash-lite-latest'];
+    const models = [MODEL, 'gemini-flash-lite-latest', 'gemini-2.5-flash-lite', 'gemini-3-flash-preview', 'gemini-2.0-flash', MODEL];
     let g;
     for (let n = 0; n < models.length; n++) {
       g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${models[n]}:generateContent`, {
@@ -47,7 +59,7 @@ export default {
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
         body: reqBody,
       });
-      if (g.ok || ![429, 500, 503, 504].includes(g.status)) break;
+      if (g.ok || ![404, 429, 500, 503, 504].includes(g.status)) break;
       await new Promise(r => setTimeout(r, 600 * (n + 1)));
     }
     if (!g.ok) return json({ error: 'ai error', status: g.status, detail: (await g.text()).slice(0, 300) }, 502);
@@ -58,6 +70,10 @@ export default {
     } catch { return json({ error: 'bad ai response' }, 502); }
   },
 };
+
+
+
+
 
 
 
