@@ -3,6 +3,8 @@ const MODEL = 'gemini-flash-latest';
 const PROMPT = 'Eres nutricionista. Estima los valores nutricionales de lo que se describe o aparece en la imagen (una porción típica si no se indica cantidad). Responde SOLO JSON: {"name":string,"kcal":number,"protein":number,"carbs":number,"fat":number}. name en español.';
 
 
+
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -16,6 +18,8 @@ export default {
     if (origin && !okOrigin) return json({ error: 'origin' }, 403);
 
 
+
+
     // 1) validar sesión de Supabase
     const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (!token) return json({ error: 'no auth' }, 401);
@@ -25,6 +29,8 @@ export default {
     if (!u.ok) return json({ error: 'invalid session' }, 401);
 
 
+
+
     // 2) llamar a Gemini
     let body; try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
     const parts = [{ text: PROMPT + (body.text ? '\nDescripción: ' + String(body.text).slice(0, 500) : '') }];
@@ -32,13 +38,18 @@ export default {
       if (String(body.image).length > 4_000_000) return json({ error: 'image too large' }, 413);
       parts.push({ inline_data: { mime_type: body.mime || 'image/jpeg', data: body.image } });
     }
-    const g = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
+    const reqBody = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } });
+    const models = [MODEL, 'gemini-flash-lite-latest', MODEL, 'gemini-flash-lite-latest'];
+    let g;
+    for (let n = 0; n < models.length; n++) {
+      g = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${models[n]}:generateContent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-        body: JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: 'application/json' } }),
+        body: reqBody,
       });
+      if (g.ok || ![429, 500, 503, 504].includes(g.status)) break;
+      await new Promise(r => setTimeout(r, 600 * (n + 1)));
+    }
     if (!g.ok) return json({ error: 'ai error', status: g.status, detail: (await g.text()).slice(0, 300) }, 502);
     try {
       const t = (await g.json()).candidates[0].content.parts[0].text;
@@ -47,4 +58,6 @@ export default {
     } catch { return json({ error: 'bad ai response' }, 502); }
   },
 };
+
+
 
