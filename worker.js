@@ -17,8 +17,8 @@ export default {
     // 1) validar sesión de Supabase
     const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (!token) return json({ error: 'no auth' }, 401);
-    const u = await fetch(env.SUPABASE_URL + '/auth/v1/user', {
-      headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY },
+    const u = await fetch((env.SUPABASE_URL || 'https://pcyatoxtwngpzbotrxxu.supabase.co') + '/auth/v1/user', {
+      headers: { Authorization: 'Bearer ' + token, apikey: env.SUPABASE_ANON_KEY || 'sb_publishable_DpZuBk4uzmjcUvFJEvoEjw_oYBU1_lW' },
     });
     if (!u.ok) return json({ error: 'invalid session' }, 401);
 
