@@ -9,6 +9,8 @@ const PROMPT = 'Eres nutricionista. Estima los valores nutricionales de lo que s
 
 
 
+const PROMPT_L = 'Esta imagen es la tabla de información nutricional de un producto. Lee los valores POR PORCIÓN indicada (si solo aparece por 100 g o 100 ml, usa esa cantidad). Responde SOLO JSON: {"name":string (nombre del producto si se ve, si no "Producto"),"amount":number (tamaño de la porción, ej. 30),"unit":"g"|"ml"|"unidad"|"taza"|"cucharada"|"rebanada"|"porción","kcal":number,"protein":number,"carbs":number,"fat":number}. Solo números, sin unidades. name en español.';
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
@@ -45,7 +47,8 @@ export default {
 
     // 2) llamar a Gemini
     let body; try { body = await req.json(); } catch { return json({ error: 'bad json' }, 400); }
-    const parts = [{ text: PROMPT + (body.text ? '\nDescripción: ' + String(body.text).slice(0, 500) : '') }];
+    const lab = body.mode === 'label';
+    const parts = [{ text: lab ? PROMPT_L : PROMPT + (body.text ? '\nDescripción: ' + String(body.text).slice(0, 500) : '') }];
     if (body.image) {
       if (String(body.image).length > 4_000_000) return json({ error: 'image too large' }, 413);
       parts.push({ inline_data: { mime_type: body.mime || 'image/jpeg', data: body.image } });
@@ -66,7 +69,7 @@ export default {
     try {
       const t = (await g.json()).candidates[0].content.parts[0].text;
       const o = JSON.parse(t);
-      return json({ name: String(o.name), kcal: +o.kcal, protein: +o.protein, carbs: +o.carbs, fat: +o.fat });
+      return json({ name: String(o.name), amount: +o.amount || 100, unit: String(o.unit || 'g'), kcal: +o.kcal, protein: +o.protein, carbs: +o.carbs, fat: +o.fat });
     } catch { return json({ error: 'bad ai response' }, 502); }
   },
 };
