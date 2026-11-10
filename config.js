@@ -2,5 +2,4 @@
 window.APP_CONFIG = {
   SUPABASE_URL: 'https://pcyatoxtwngpzbotrxxu.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_DpZuBk4uzmjcUvFJEvoEjw_oYBU1_lW',
-  WORKER_URL: '' // URL del Cloudflare Worker (opcional, activa "Describir con IA")
-};
+  WORKER_URL: '' // https://angelor256.github.io/App_-Calorias/
